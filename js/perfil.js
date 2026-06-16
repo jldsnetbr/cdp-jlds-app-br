@@ -70,16 +70,17 @@ const Perfil = {
     },
 
     initEvents(usuario) {
-        document.getElementById('cargaEntrada').addEventListener('change', () => this.atualizarSaidaPrevista());
-        document.getElementById('cargaIdaIntervalo').addEventListener('change', () => this.atualizarSaidaPrevista());
-        document.getElementById('cargaVoltaIntervalo').addEventListener('change', () => this.atualizarSaidaPrevista());
+        document.getElementById('cargaEntrada').addEventListener('change', async () => await this.atualizarSaidaPrevista());
+        document.getElementById('cargaIdaIntervalo').addEventListener('change', async () => await this.atualizarSaidaPrevista());
+        document.getElementById('cargaVoltaIntervalo').addEventListener('change', async () => await this.atualizarSaidaPrevista());
         document.getElementById('cargaSaida').addEventListener('change', () => this.atualizarCargaTotal());
 
         document.getElementById('salvarPerfil').addEventListener('click', () => this.salvarPerfil(usuario));
         document.getElementById('salvarCarga').addEventListener('click', () => this.salvarCarga());
     },
 
-    atualizarSaidaPrevista() {
+    async atualizarSaidaPrevista() {
+        const cargaSalva = await Data.getCargaHoraria();
         const entrada = document.getElementById('cargaEntrada').value;
         const idaIntervalo = document.getElementById('cargaIdaIntervalo').value;
         const voltaIntervalo = document.getElementById('cargaVoltaIntervalo').value;
@@ -89,8 +90,14 @@ const Perfil = {
             const idaMin = Utils.timeToMinutes(idaIntervalo);
             const voltaMin = Utils.timeToMinutes(voltaIntervalo);
 
-            const intervalo = voltaMin - idaMin;
-            const saidaMin = entradaMin + 480 + intervalo;
+            const saidaSalva = Utils.timeToMinutes(cargaSalva.saida);
+            const entradaSalva = Utils.timeToMinutes(cargaSalva.entrada);
+            const idaSalva = Utils.timeToMinutes(cargaSalva.idaIntervalo);
+            const voltaSalva = Utils.timeToMinutes(cargaSalva.voltaIntervalo);
+
+            const jornadaAlvo = (saidaSalva - entradaSalva) - (voltaSalva - idaSalva);
+
+            const saidaMin = entradaMin + jornadaAlvo + (voltaMin - idaMin);
 
             document.getElementById('cargaSaida').value = Utils.minutesToTime(saidaMin);
             this.atualizarCargaTotal();
