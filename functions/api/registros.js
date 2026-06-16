@@ -1,4 +1,13 @@
-import { validateSession } from './auth-utils.js';
+async function validateSession(db, request) {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+    const token = authHeader.slice(7);
+    const now = new Date().toISOString();
+    const sessao = await db.prepare(
+        'SELECT s.usuario_id, u.nome FROM sessoes s JOIN usuarios u ON s.usuario_id = u.id WHERE s.token = ? AND s.expires_at > ?'
+    ).bind(token, now).first();
+    return sessao ? { usuarioId: sessao.usuario_id, nome: sessao.nome } : null;
+}
 
 function unauthorized() {
     return new Response(JSON.stringify({ error: 'Não autorizado' }), {
@@ -9,7 +18,6 @@ function unauthorized() {
 
 export async function onRequestGet(context) {
     const { env, request } = context;
-
     try {
         const user = await validateSession(env.DB, request);
         if (!user) return unauthorized();
@@ -22,7 +30,6 @@ export async function onRequestGet(context) {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
-
     } catch {
         return new Response(JSON.stringify({ error: 'Erro interno' }), {
             status: 500,
@@ -33,7 +40,6 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
     const { env, request } = context;
-
     try {
         const user = await validateSession(env.DB, request);
         if (!user) return unauthorized();
@@ -48,7 +54,7 @@ export async function onRequestPost(context) {
             });
         }
 
-        const result = await env.DB.prepare(`
+        await env.DB.prepare(`
             INSERT INTO registros (usuario_id, data, entrada, ida_intervalo, volta_intervalo, saida)
             VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(usuario_id, data) DO UPDATE SET
@@ -58,11 +64,10 @@ export async function onRequestPost(context) {
                 saida = excluded.saida
         `).bind(user.usuarioId, data, entrada || null, ida_intervalo || null, volta_intervalo || null, saida || null).run();
 
-        return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id }), {
+        return new Response(JSON.stringify({ success: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
-
     } catch {
         return new Response(JSON.stringify({ error: 'Erro interno' }), {
             status: 500,
@@ -73,7 +78,6 @@ export async function onRequestPost(context) {
 
 export async function onRequestPut(context) {
     const { env, request } = context;
-
     try {
         const user = await validateSession(env.DB, request);
         if (!user) return unauthorized();
@@ -89,11 +93,7 @@ export async function onRequestPut(context) {
         }
 
         await env.DB.prepare(`
-            UPDATE registros SET
-                entrada = ?,
-                ida_intervalo = ?,
-                volta_intervalo = ?,
-                saida = ?
+            UPDATE registros SET entrada = ?, ida_intervalo = ?, volta_intervalo = ?, saida = ?
             WHERE id = ? AND usuario_id = ?
         `).bind(entrada || null, ida_intervalo || null, volta_intervalo || null, saida || null, id, user.usuarioId).run();
 
@@ -101,7 +101,6 @@ export async function onRequestPut(context) {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
-
     } catch {
         return new Response(JSON.stringify({ error: 'Erro interno' }), {
             status: 500,
@@ -112,7 +111,6 @@ export async function onRequestPut(context) {
 
 export async function onRequestDelete(context) {
     const { env, request } = context;
-
     try {
         const user = await validateSession(env.DB, request);
         if (!user) return unauthorized();
@@ -133,7 +131,6 @@ export async function onRequestDelete(context) {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
-
     } catch {
         return new Response(JSON.stringify({ error: 'Erro interno' }), {
             status: 500,

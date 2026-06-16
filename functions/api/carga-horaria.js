@@ -1,4 +1,13 @@
-import { validateSession } from './auth-utils.js';
+async function validateSession(db, request) {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+    const token = authHeader.slice(7);
+    const now = new Date().toISOString();
+    const sessao = await db.prepare(
+        'SELECT s.usuario_id, u.nome FROM sessoes s JOIN usuarios u ON s.usuario_id = u.id WHERE s.token = ? AND s.expires_at > ?'
+    ).bind(token, now).first();
+    return sessao ? { usuarioId: sessao.usuario_id, nome: sessao.nome } : null;
+}
 
 function unauthorized() {
     return new Response(JSON.stringify({ error: 'Não autorizado' }), {
@@ -9,7 +18,6 @@ function unauthorized() {
 
 export async function onRequestGet(context) {
     const { env, request } = context;
-
     try {
         const user = await validateSession(env.DB, request);
         if (!user) return unauthorized();
@@ -19,16 +27,8 @@ export async function onRequestGet(context) {
         ).bind(user.usuarioId).first();
 
         if (!carga) {
-            await env.DB.prepare(
-                'INSERT INTO carga_horaria (usuario_id) VALUES (?)'
-            ).bind(user.usuarioId).run();
-
-            carga = {
-                entrada: '08:00',
-                ida_intervalo: '12:00',
-                volta_intervalo: '13:00',
-                saida: '17:00'
-            };
+            await env.DB.prepare('INSERT INTO carga_horaria (usuario_id) VALUES (?)').bind(user.usuarioId).run();
+            carga = { entrada: '08:00', ida_intervalo: '12:00', volta_intervalo: '13:00', saida: '17:00' };
         }
 
         return new Response(JSON.stringify({
@@ -40,7 +40,6 @@ export async function onRequestGet(context) {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
-
     } catch {
         return new Response(JSON.stringify({ error: 'Erro interno' }), {
             status: 500,
@@ -51,7 +50,6 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
     const { env, request } = context;
-
     try {
         const user = await validateSession(env.DB, request);
         if (!user) return unauthorized();
@@ -73,7 +71,6 @@ export async function onRequestPost(context) {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
-
     } catch {
         return new Response(JSON.stringify({ error: 'Erro interno' }), {
             status: 500,
