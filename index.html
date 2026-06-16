@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Ponto</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f39c12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <div class="login-container">
+            <h1 class="login-title">Controle de Ponto</h1>
+
+            <!-- Login -->
+            <div id="loginSection">
+                <form class="login-form" id="loginForm">
+                    <div class="input-group">
+                        <label for="loginNome">Nome</label>
+                        <input type="text" id="loginNome" placeholder="Seu nome" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="loginPin">PIN</label>
+                        <input type="password" id="loginPin" placeholder="****" maxlength="4" pattern="[0-9]{4}" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Entrar</button>
+                    <div id="errorMsg" class="error-msg hidden"></div>
+                </form>
+
+                <div class="auth-links">
+                    <a href="#" id="showCadastro">Criar conta</a>
+                </div>
+
+                <div class="auth-divider">ou</div>
+
+                <button class="btn btn-secondary" id="quickLoginBtn">Login rápido</button>
+            </div>
+
+            <!-- Cadastro -->
+            <div id="cadastroSection" class="hidden">
+                <form class="login-form" id="cadastroForm">
+                    <div class="input-group">
+                        <label for="cadastroNome">Nome</label>
+                        <input type="text" id="cadastroNome" placeholder="Seu nome" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="cadastroPin">PIN (4 dígitos)</label>
+                        <input type="password" id="cadastroPin" placeholder="****" maxlength="4" pattern="[0-9]{4}" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="cadastroConfirmarPin">Confirmar PIN</label>
+                        <input type="password" id="cadastroConfirmarPin" placeholder="****" maxlength="4" pattern="[0-9]{4}" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Criar conta</button>
+                    <div id="cadastroMsg" class="error-msg hidden"></div>
+                </form>
+
+                <div class="auth-links">
+                    <a href="#" id="showLogin">Voltar ao login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
+</body>
+</html>

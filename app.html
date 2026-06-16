@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Ponto</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f39c12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <div class="app-container" id="appContainer">
+            <header class="app-header">
+                <h1 id="userName">Olá, Usuário</h1>
+                <div class="header-right">
+                    <span class="sync-status" id="syncStatus"></span>
+                    <button class="btn-logout" id="logoutBtn">Sair</button>
+                </div>
+            </header>
+
+            <main class="app-main"></main>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" id="navBanco">
+                    <span class="nav-icon">🏦</span>
+                    <span>Banco</span>
+                </button>
+                <button class="nav-item active" id="navPonto">
+                    <span class="nav-icon">⏱️</span>
+                    <span>Ponto</span>
+                </button>
+                <button class="nav-item" id="navPerfil">
+                    <span class="nav-icon">👤</span>
+                    <span>Perfil</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle"></span>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter"></div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="js/banco.js"></script>
+    <script src="js/perfil.js"></script>
+    <script src="js/ponto.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+    "name": "controle-ponto",
+    "version": "1.0.0",
+    "description": "App de controle de ponto pessoal",
+    "scripts": {
+        "dev": "wrangler pages dev .",
+        "deploy": "wrangler pages deploy . --project-name=controle-ponto",
+        "db:create": "wrangler d1 create controle-ponto-db",
+        "db:init": "wrangler d1 execute controle-ponto-db --file=schema.sql"
+    }
+}
