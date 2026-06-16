@@ -36,7 +36,7 @@ self.addEventListener('fetch', (event) => {
 
     if (url.pathname.startsWith('/api/')) {
         event.respondWith(
-            fetch(event.request).catch(() => {
+            fetch(event.request, { redirect: 'follow' }).catch(() => {
                 return new Response(JSON.stringify({ error: 'Offline' }), {
                     status: 503,
                     headers: { 'Content-Type': 'application/json' }
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
 
     event.respondWith(
         caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
+            return response || fetch(event.request, { redirect: 'follow' });
         })
     );
 });
