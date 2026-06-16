@@ -1,4 +1,4 @@
-const CACHE_NAME = 'controle-ponto-v2';
+const CACHE_NAME = 'controle-ponto-v3';
 const FILES_TO_CACHE = [
     '/index.html',
     '/app.html',
@@ -47,8 +47,21 @@ self.addEventListener('fetch', (event) => {
     }
 
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request, { redirect: 'follow' });
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.match(event.request).then((cached) => {
+                const fetchAndCache = fetch(event.request, { redirect: 'follow' }).then((response) => {
+                    if (response && response.status === 200) {
+                        cache.put(event.request, response.clone());
+                    }
+                    return response;
+                }).catch(() => cached);
+
+                if (cached && cached.status >= 200 && cached.status < 300) {
+                    return cached;
+                }
+
+                return fetchAndCache;
+            });
         })
     );
 });
