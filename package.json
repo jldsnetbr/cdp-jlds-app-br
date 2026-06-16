@@ -3,9 +3,17 @@
     "version": "1.0.0",
     "description": "App de controle de ponto pessoal",
     "scripts": {
-        "dev": "wrangler pages dev .",
-        "deploy": "wrangler pages deploy . --project-name=controle-ponto",
-        "db:create": "wrangler d1 create controle-ponto-db",
-        "db:init": "wrangler d1 execute controle-ponto-db --file=schema.sql"
+        "start": "cd backend && npm start",
+        "dev": "cd backend && npm run dev",
+        "docker:build": "docker compose build",
+        "docker:up": "docker compose up -d",
+        "docker:down": "docker compose down",
+        "docker:logs": "docker compose logs -f",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:api": "vitest run tests/integration"
+    },
+    "devDependencies": {
+        "vitest": "^2.1.9"
     }
 }
