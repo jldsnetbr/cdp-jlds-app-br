@@ -11,10 +11,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await Data.init();
 
     const usuario = Data.getUsuario();
-    if (usuario) {
+    const token = Data.getToken();
+    if (usuario && token) {
         window.location.href = 'app.html';
         return;
     }
+
+    Data.clearToken();
 
     showCadastro.addEventListener('click', (e) => {
         e.preventDefault();
@@ -54,7 +57,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (response.ok) {
                     const user = await response.json();
-                    Data.setUsuario(user);
+                    Data.setUsuario({ id: user.id, nome: user.nome });
+                    Data.setToken(user.token);
                     Data.setRegistros([]);
                     window.location.href = 'app.html';
                     return;
@@ -106,7 +110,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (response.ok) {
                     const user = await response.json();
-                    Data.setUsuario(user);
+                    Data.setUsuario({ id: user.id, nome: user.nome });
+                    Data.setToken(user.token);
                     Data.setRegistros([]);
                     window.location.href = 'app.html';
                     return;

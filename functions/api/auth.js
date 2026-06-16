@@ -1,3 +1,5 @@
+import { createSession, cleanExpiredSessions } from './auth-utils.js';
+
 export async function onRequestPost(context) {
     const { env, request } = context;
 
@@ -15,7 +17,7 @@ export async function onRequestPost(context) {
         const db = env.DB;
 
         const usuario = await db.prepare(
-            'SELECT id, nome, pin FROM usuarios WHERE nome = ? AND pin = ?'
+            'SELECT id, nome FROM usuarios WHERE nome = ? AND pin = ?'
         ).bind(nome, pin).first();
 
         if (!usuario) {
@@ -25,17 +27,20 @@ export async function onRequestPost(context) {
             });
         }
 
+        await cleanExpiredSessions(db);
+        const sessao = await createSession(db, usuario.id);
+
         return new Response(JSON.stringify({
             id: usuario.id,
             nome: usuario.nome,
-            pin: usuario.pin
+            token: sessao.token
         }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
 
-    } catch (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
+    } catch {
+        return new Response(JSON.stringify({ error: 'Erro interno' }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
         });

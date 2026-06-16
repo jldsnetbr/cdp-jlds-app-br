@@ -36,3 +36,17 @@ CREATE TABLE IF NOT EXISTS carga_horaria (
 CREATE INDEX IF NOT EXISTS idx_registros_usuario ON registros(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_registros_data ON registros(data);
 CREATE INDEX IF NOT EXISTS idx_registros_usuario_data ON registros(usuario_id, data);
+
+-- Tabela de sessões (tokens de autenticação)
+CREATE TABLE IF NOT EXISTS sessoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessoes_token ON sessoes(token);
+CREATE INDEX IF NOT EXISTS idx_sessoes_usuario ON sessoes(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_sessoes_expires ON sessoes(expires_at);

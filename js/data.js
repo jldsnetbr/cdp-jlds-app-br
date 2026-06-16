@@ -14,10 +14,11 @@ const Data = {
 
     async init() {
         try {
-            const response = await fetch(`${API_BASE}/registros?usuario_id=0`, {
-                method: 'GET'
+            const response = await fetch(`${API_BASE}/registros`, {
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer test' }
             });
-            this.useAPI = response.ok || response.status === 400;
+            this.useAPI = response.status === 401 || response.ok;
         } catch {
             this.useAPI = false;
         }
@@ -44,6 +45,23 @@ const Data = {
         } else {
             localStorage.setItem('usuario', JSON.stringify(usuario));
         }
+    },
+
+    getToken() {
+        return localStorage.getItem('auth_token');
+    },
+
+    setToken(token) {
+        localStorage.setItem('auth_token', token);
+    },
+
+    clearToken() {
+        localStorage.removeItem('auth_token');
+    },
+
+    getAuthHeaders() {
+        const token = this.getToken();
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
     },
 
     getSyncQueue() {
@@ -76,9 +94,6 @@ const Data = {
     async syncAll() {
         if (!this.useAPI || !navigator.onLine) return;
 
-        const usuario = this.getUsuario();
-        if (!usuario) return;
-
         const queue = this.getSyncQueue();
         if (queue.length === 0) {
             await this.pullFromServer();
@@ -90,9 +105,8 @@ const Data = {
                 if (action.type === 'registro') {
                     await fetch(`${API_BASE}/registros`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                         body: JSON.stringify({
-                            usuario_id: usuario.id,
                             data: action.data,
                             entrada: action.entrada,
                             ida_intervalo: action.idaIntervalo,
@@ -103,9 +117,8 @@ const Data = {
                 } else if (action.type === 'carga') {
                     await fetch(`${API_BASE}/carga-horaria`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                         body: JSON.stringify({
-                            usuario_id: usuario.id,
                             entrada: action.entrada,
                             ida_intervalo: action.idaIntervalo,
                             volta_intervalo: action.voltaIntervalo,
@@ -123,11 +136,10 @@ const Data = {
     async pullFromServer() {
         if (!this.useAPI || !navigator.onLine) return;
 
-        const usuario = this.getUsuario();
-        if (!usuario) return;
-
         try {
-            const response = await fetch(`${API_BASE}/registros?usuario_id=${usuario.id}`);
+            const response = await fetch(`${API_BASE}/registros`, {
+                headers: this.getAuthHeaders()
+            });
             if (response.ok) {
                 const data = await response.json();
                 const registros = data.map(r => ({
@@ -142,7 +154,9 @@ const Data = {
         } catch {}
 
         try {
-            const response = await fetch(`${API_BASE}/carga-horaria?usuario_id=${usuario.id}`);
+            const response = await fetch(`${API_BASE}/carga-horaria`, {
+                headers: this.getAuthHeaders()
+            });
             if (response.ok) {
                 const data = await response.json();
                 localStorage.setItem('cargaHoraria_offline', JSON.stringify(data));
@@ -152,25 +166,30 @@ const Data = {
 
     async getRegistros() {
         if (this.useAPI) {
-            const usuario = this.getUsuario();
-            if (!usuario) return [];
-
             if (navigator.onLine) {
                 try {
-                    const response = await fetch(`${API_BASE}/registros?usuario_id=${usuario.id}`);
-                    const data = await response.json();
-                    const registros = data.map(r => ({
-                        data: r.data,
-                        entrada: r.entrada,
-                        idaIntervalo: r.ida_intervalo,
-                        voltaIntervalo: r.volta_intervalo,
-                        saida: r.saida
-                    }));
-                    localStorage.setItem('registros_offline', JSON.stringify(registros));
-                    return registros;
+                    const response = await fetch(`${API_BASE}/registros`, {
+                        headers: this.getAuthHeaders()
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        const registros = data.map(r => ({
+                            data: r.data,
+                            entrada: r.entrada,
+                            idaIntervalo: r.ida_intervalo,
+                            voltaIntervalo: r.volta_intervalo,
+                            saida: r.saida
+                        }));
+                        localStorage.setItem('registros_offline', JSON.stringify(registros));
+                        return registros;
+                    }
+                    if (response.status === 401) {
+                        this.clearToken();
+                        window.location.href = 'index.html';
+                        return [];
+                    }
                 } catch {}
             }
-
             return JSON.parse(localStorage.getItem('registros_offline')) || [];
         }
         return JSON.parse(localStorage.getItem('registros')) || [];
@@ -201,34 +220,24 @@ const Data = {
             registros.push(registro);
             this.setRegistros(registros);
 
-            if (this.useAPI) {
-                const usuario = this.getUsuario();
-                if (usuario && navigator.onLine) {
-                    try {
-                        await fetch(`${API_BASE}/registros`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                usuario_id: usuario.id,
-                                data: hoje,
-                                entrada: null,
-                                ida_intervalo: null,
-                                volta_intervalo: null,
-                                saida: null
-                            })
-                        });
-                    } catch {
-                        this.addToSyncQueue({
-                            type: 'registro',
-                            ...registro
-                        });
-                    }
-                } else if (usuario) {
-                    this.addToSyncQueue({
-                        type: 'registro',
-                        ...registro
+            if (this.useAPI && navigator.onLine) {
+                try {
+                    await fetch(`${API_BASE}/registros`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                        body: JSON.stringify({
+                            data: hoje,
+                            entrada: null,
+                            ida_intervalo: null,
+                            volta_intervalo: null,
+                            saida: null
+                        })
                     });
+                } catch {
+                    this.addToSyncQueue({ type: 'registro', ...registro });
                 }
+            } else if (this.useAPI) {
+                this.addToSyncQueue({ type: 'registro', ...registro });
             }
         }
 
@@ -243,45 +252,49 @@ const Data = {
             this.setRegistros(registros);
         }
 
-        if (this.useAPI) {
-            const usuario = this.getUsuario();
-            if (usuario && navigator.onLine) {
-                try {
-                    await fetch(`${API_BASE}/registros`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            usuario_id: usuario.id,
-                            data: registro.data,
-                            entrada: registro.entrada,
-                            ida_intervalo: registro.idaIntervalo,
-                            volta_intervalo: registro.voltaIntervalo,
-                            saida: registro.saida
-                        })
-                    });
-                    return;
-                } catch {}
-            }
-
-            if (usuario) {
-                this.addToSyncQueue({
-                    type: 'registro',
-                    ...registro
+        if (this.useAPI && navigator.onLine) {
+            try {
+                const response = await fetch(`${API_BASE}/registros`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                    body: JSON.stringify({
+                        data: registro.data,
+                        entrada: registro.entrada,
+                        ida_intervalo: registro.idaIntervalo,
+                        volta_intervalo: registro.voltaIntervalo,
+                        saida: registro.saida
+                    })
                 });
-            }
+                if (response.ok) return;
+                if (response.status === 401) {
+                    this.clearToken();
+                    window.location.href = 'index.html';
+                    return;
+                }
+            } catch {}
+        }
+
+        if (this.useAPI) {
+            this.addToSyncQueue({ type: 'registro', ...registro });
         }
     },
 
     async getCargaHoraria() {
         if (this.useAPI) {
-            const usuario = this.getUsuario();
-            if (usuario && navigator.onLine) {
+            if (navigator.onLine) {
                 try {
-                    const response = await fetch(`${API_BASE}/carga-horaria?usuario_id=${usuario.id}`);
+                    const response = await fetch(`${API_BASE}/carga-horaria`, {
+                        headers: this.getAuthHeaders()
+                    });
                     if (response.ok) {
                         const data = await response.json();
                         localStorage.setItem('cargaHoraria_offline', JSON.stringify(data));
                         return data;
+                    }
+                    if (response.status === 401) {
+                        this.clearToken();
+                        window.location.href = 'index.html';
+                        return { ...CARGA_DEFAULT };
                     }
                 } catch {}
             }
@@ -292,32 +305,30 @@ const Data = {
 
     async setCargaHoraria(carga) {
         if (this.useAPI) {
-            const usuario = this.getUsuario();
             localStorage.setItem('cargaHoraria_offline', JSON.stringify(carga));
 
-            if (usuario && navigator.onLine) {
+            if (navigator.onLine) {
                 try {
-                    await fetch(`${API_BASE}/carga-horaria`, {
+                    const response = await fetch(`${API_BASE}/carga-horaria`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                         body: JSON.stringify({
-                            usuario_id: usuario.id,
                             entrada: carga.entrada,
                             ida_intervalo: carga.idaIntervalo,
                             volta_intervalo: carga.voltaIntervalo,
                             saida: carga.saida
                         })
                     });
-                    return;
+                    if (response.ok) return;
+                    if (response.status === 401) {
+                        this.clearToken();
+                        window.location.href = 'index.html';
+                        return;
+                    }
                 } catch {}
             }
 
-            if (usuario) {
-                this.addToSyncQueue({
-                    type: 'carga',
-                    ...carga
-                });
-            }
+            this.addToSyncQueue({ type: 'carga', ...carga });
         } else {
             localStorage.setItem('cargaHoraria', JSON.stringify(carga));
         }
@@ -331,5 +342,6 @@ const Data = {
         localStorage.removeItem('cargaHoraria');
         localStorage.removeItem('cargaHoraria_offline');
         localStorage.removeItem('sync_queue');
+        localStorage.removeItem('auth_token');
     }
 };

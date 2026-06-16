@@ -1,3 +1,5 @@
+import { createSession, cleanExpiredSessions } from './auth-utils.js';
+
 export async function onRequestPost(context) {
     const { env, request } = context;
 
@@ -35,17 +37,20 @@ export async function onRequestPost(context) {
 
         await db.prepare('INSERT INTO carga_horaria (usuario_id) VALUES (?)').bind(usuarioId).run();
 
+        await cleanExpiredSessions(db);
+        const sessao = await createSession(db, usuarioId);
+
         return new Response(JSON.stringify({
             id: usuarioId,
             nome,
-            pin
+            token: sessao.token
         }), {
             status: 201,
             headers: { 'Content-Type': 'application/json' }
         });
 
-    } catch (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
+    } catch {
+        return new Response(JSON.stringify({ error: 'Erro interno' }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
         });
