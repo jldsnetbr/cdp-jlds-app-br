@@ -124,11 +124,6 @@ const Ponto = {
                 }
             });
         });
-
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            Data.limparDados();
-            window.location.href = 'index.html';
-        });
     },
 
     getProximoCampoVazio() {

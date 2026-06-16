@@ -17,6 +17,11 @@ const Nav = {
         document.getElementById('modalOverlay').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) this.closeModal();
         });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            Data.limparDados();
+            window.location.href = 'index.html';
+        });
     },
 
     async navigateTo(section) {

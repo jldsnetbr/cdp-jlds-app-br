@@ -23,6 +23,16 @@ const Data = {
             this.useAPI = false;
         }
 
+        if (this.useAPI) {
+            const usuario = this.getUsuario();
+            const token = this.getToken();
+            if (usuario && !token) {
+                this.limparDados();
+                window.location.href = 'index.html';
+                return;
+            }
+        }
+
         window.addEventListener('online', () => this.syncAll());
         window.addEventListener('offline', () => this.notifySyncStatus());
 
