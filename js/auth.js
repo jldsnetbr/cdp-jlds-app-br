@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cadastroForm = document.getElementById('cadastroForm');
     const errorMsg = document.getElementById('errorMsg');
     const cadastroMsg = document.getElementById('cadastroMsg');
-    const quickLoginBtn = document.getElementById('quickLoginBtn');
     const showCadastro = document.getElementById('showCadastro');
     const showLogin = document.getElementById('showLogin');
     const loginSection = document.getElementById('loginSection');
@@ -27,46 +26,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         cadastroSection.classList.add('hidden');
         loginSection.classList.remove('hidden');
-    });
-
-    quickLoginBtn.addEventListener('click', async () => {
-        if (Data.useAPI) {
-            try {
-                const response = await fetch(`${API_BASE}/cadastro`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome: 'Usuário', pin: '0000' })
-                });
-
-                if (response.ok) {
-                    const user = await response.json();
-                    Data.setUsuario(user);
-                    Data.setRegistros([]);
-                    window.location.href = 'app.html';
-                    return;
-                }
-
-                if (response.status === 409) {
-                    const loginResponse = await fetch(`${API_BASE}/auth`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nome: 'Usuário', pin: '0000' })
-                    });
-
-                    if (loginResponse.ok) {
-                        const user = await loginResponse.json();
-                        Data.setUsuario(user);
-                        Data.setRegistros([]);
-                        window.location.href = 'app.html';
-                        return;
-                    }
-                }
-            } catch {}
-        }
-
-        Data.setUsuario({ nome: 'Usuário', pin: '0000' });
-        Data.setRegistros([]);
-        window.location.href = 'app.html';
     });
 
     loginForm.addEventListener('submit', async (e) => {
